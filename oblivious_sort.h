@@ -61,12 +61,6 @@ public:
     // Step 1: Initializes buckets by assigning random keys, partitioning the input, and padding with dummies.
     void initializeBuckets(const std::vector<int>& input_array, int B, int Z);
 
-    // MergeSplit operation: combines two buckets and partitions real elements based on a designated bit.
-    std::pair<std::vector<Element>, std::vector<Element>> merge_split(
-        const std::vector<Element>& bucket1,
-        const std::vector<Element>& bucket2,
-        int level, int total_levels, int Z);
-
     // Step 2: Processes the butterfly network by performing MergeSplit on each bucket pair.
     void performButterflyNetwork(int B, int L, int Z);
 
@@ -78,6 +72,18 @@ public:
 
     // The main oblivious sort function.
     std::vector<int> oblivious_sort(const std::vector<int>& input_array, int bucket_size);
+
+    // NEW: Bitonic sort based functions for constant storage MergeSplit.
+    // These functions operate on a small vector (of size 2Z) inside the enclave.
+    void bitonicMerge(std::vector<Element>& a, int low, int cnt, bool ascending);
+    void bitonicSort(std::vector<Element>& a, int low, int cnt, bool ascending);
+
+    // Modified MergeSplit function that uses bitonic sort to implement the bucket split
+    // with only O(1) enclave storage.
+    std::pair<std::vector<Element>, std::vector<Element>> merge_split_bitonic(
+        const std::vector<Element>& bucket1,
+        const std::vector<Element>& bucket2,
+        int level, int total_levels, int Z);
 };
 
 #endif // OBLIVIOUS_SORT_H

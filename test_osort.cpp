@@ -7,8 +7,8 @@ int main() {
     std::vector<int> input_data;
     std::random_device rd;
     std::mt19937 rng(rd());
-    std::uniform_int_distribution<int> dist(1, 100);
-    for (int i = 0; i < 10; i++) {
+    std::uniform_int_distribution<int> dist(1, 1000);
+    for (int i = 0; i < 100; i++) {
         input_data.push_back(dist(rng));
     }
 

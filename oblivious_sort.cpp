@@ -102,38 +102,95 @@ void Enclave::initializeBuckets(const std::vector<int>& input_array, int B, int 
         untrusted->write_bucket(0, i, encryptBucket(bucket));
     }
 }
+void Enclave::bitonicMerge(std::vector<Element>& a, int low, int cnt, bool ascending) {
+    if (cnt > 1) {
+        int k = cnt / 2;
+        for (int i = low; i < low + k; i++) {
+            if ((ascending && a[i].key > a[i + k].key) ||
+                (!ascending && a[i].key < a[i + k].key)) {
+                std::swap(a[i], a[i + k]);
+            }
+        }
+        bitonicMerge(a, low, k, ascending);
+        bitonicMerge(a, low + k, k, ascending);
+    }
+}
 
-std::pair<std::vector<Element>, std::vector<Element>> Enclave::merge_split(
+void Enclave::bitonicSort(std::vector<Element>& a, int low, int cnt, bool ascending) {
+    if (cnt > 1) {
+        int k = cnt / 2;
+        // First half sorted in ascending order, second half in descending order.
+        bitonicSort(a, low, k, true);
+        bitonicSort(a, low + k, k, false);
+        // Merge whole sequence in desired order.
+        bitonicMerge(a, low, cnt, ascending);
+    }
+}
+
+// Modified merge_split function that uses bitonic sort.
+// This function replaces the original merge_split to achieve constant (O(1)) enclave storage.
+std::pair<std::vector<Element>, std::vector<Element>> Enclave::merge_split_bitonic(
     const std::vector<Element>& bucket1,
     const std::vector<Element>& bucket2,
     int level, int total_levels, int Z) {
 
     int L = total_levels;
     int bit_index = L - 1 - level;
-    std::vector<Element> combined;
-    combined.insert(combined.end(), bucket1.begin(), bucket1.end());
+    
+    // Combine the two buckets into one vector (size 2Z).
+    std::vector<Element> combined = bucket1;
     combined.insert(combined.end(), bucket2.begin(), bucket2.end());
 
-    std::vector<Element> real_elements;
-    for (const auto &elem : combined)
-        if (!elem.is_dummy)
-            real_elements.push_back(elem);
-
-    std::vector<Element> out_bucket0, out_bucket1;
-    for (const auto &elem : real_elements) {
-        if (((elem.key >> bit_index) & 1) == 0)
-            out_bucket0.push_back(elem);
-        else
-            out_bucket1.push_back(elem);
+    // Count the number of real elements assigned to each target bucket.
+    int count0 = 0, count1 = 0;
+    for (const auto &elem : combined) {
+        if (!elem.is_dummy) {
+            if (((elem.key >> bit_index) & 1) == 0)
+                count0++;
+            else
+                count1++;
+        }
     }
-    if (out_bucket0.size() > static_cast<size_t>(Z) || out_bucket1.size() > static_cast<size_t>(Z))
+    if (count0 > Z || count1 > Z)
         throw std::overflow_error("Bucket overflow occurred in merge_split.");
-    while (out_bucket0.size() < static_cast<size_t>(Z))
-        out_bucket0.push_back(Element{0, 0, true});
-    while (out_bucket1.size() < static_cast<size_t>(Z))
-        out_bucket1.push_back(Element{0, 0, true});
+
+    // Determine how many dummy elements need to be assigned to each bucket.
+    int needed_dummies0 = Z - count0;
+    int needed_dummies1 = Z - count1;
+    int assigned_dummies0 = 0, assigned_dummies1 = 0;
+
+    // For each element in 'combined', assign a composite key that will be used for bitonic sort.
+    // We define the composite key as:
+    //   For a real element: ( ( (elem.key >> bit_index) & 1 ) << 1 ) | 0.
+    //       That is, 0 if the bit is 0 (target bucket 0) and 2 if the bit is 1 (target bucket 1).
+    //   For a dummy element:
+    //       If we still need dummies in bucket 0, assign composite key 1.
+    //       Otherwise, assign composite key 3.
+    for (auto &elem : combined) {
+        if (elem.is_dummy) {
+            if (assigned_dummies0 < needed_dummies0) {
+                elem.key = 1; // Tagged for bucket 0 dummy.
+                assigned_dummies0++;
+            } else {
+                elem.key = 3; // Tagged for bucket 1 dummy.
+                assigned_dummies1++;
+            }
+        } else {
+            int bit_val = (elem.key >> bit_index) & 1;
+            elem.key = (bit_val << 1); // 0 for bucket 0, 2 for bucket 1.
+        }
+    }
+
+    // Perform bitonic sort on the combined vector using the composite keys.
+    bitonicSort(combined, 0, combined.size(), true);
+    
+    // After sorting, the first Z elements belong to output bucket 0, and the next Z to output bucket 1.
+    std::vector<Element> out_bucket0(combined.begin(), combined.begin() + Z);
+    std::vector<Element> out_bucket1(combined.begin() + Z, combined.end());
+
     return {out_bucket0, out_bucket1};
 }
+ 
 
 void Enclave::performButterflyNetwork(int B, int L, int Z) {
     for (int level = 0; level < L; level++) {
@@ -142,7 +199,7 @@ void Enclave::performButterflyNetwork(int B, int L, int Z) {
             std::vector<Element> bucket2_enc = untrusted->read_bucket(level, i + 1);
             std::vector<Element> bucket1 = decryptBucket(bucket1_enc);
             std::vector<Element> bucket2 = decryptBucket(bucket2_enc);
-            auto [out_bucket0, out_bucket1] = merge_split(bucket1, bucket2, level, L, Z);
+            auto [out_bucket0, out_bucket1] = merge_split_bitonic(bucket1, bucket2, level, L, Z);
             untrusted->write_bucket(level + 1, i, encryptBucket(out_bucket0));
             untrusted->write_bucket(level + 1, i + 1, encryptBucket(out_bucket1));
         }
@@ -185,3 +242,4 @@ std::vector<int> Enclave::oblivious_sort(const std::vector<int>& input_array, in
     std::vector<Element> final_elements = extractFinalElements(B, L);
     return finalSort(final_elements);
 }
+
