@@ -20,9 +20,13 @@ int main(int argc, char** argv) {
     Client client(&server);
 
     try {
+	cout << "Unsorted Data:\n";
+	for (int i = 0; i < INPUT_DATA_SIZE; i++) {
+		cout << i << ", " << server.storage[i] << "\n";
+	}
         client.sort(INPUT_DATA_SIZE, 1);
 
-        std::cout << "Sorted Data: ";
+        std::cout << "Sorted Data:\n";
         for (int i = 0; i < INPUT_DATA_SIZE; i++) {
             cout << i << ", " << server.storage[i] << "\n";
         }

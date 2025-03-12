@@ -28,16 +28,17 @@ Client::Client(Server* new_server) {
   server = new_server;
 }
 
+//without encryption
 void Client :: comp_values(int i, int j, int dir) {
     int a = decrypt(server->get_value(i));
     int b = decrypt(server->get_value(j));
     if (dir==(a>b)) {
-        server->set_value(j, encrypt(a));
-        server->set_value(i, encrypt(b));
+        server->set_value(encrypt(j), a);
+        server->set_value(encrypt(i), b);
     }
     else {
-        server->set_value(i, a);
-        server->set_value(j, b);
+        server->set_value(encrypt(i), a);
+        server->set_value(encrypt(j), b);
     }
 }
  
@@ -47,8 +48,9 @@ void Client :: comp_values(int i, int j, int dir) {
 void Client :: bitonic_merge(int low, int cnt, int dir) {
     if (cnt>1) {
         int k = cnt/2;
-        for (int i=low; i<low+k; i++)
+        for (int i=low; i<low+k; i++) {
             comp_values(i, i+k, dir);
+	}
         bitonic_merge(low, k, dir);
         bitonic_merge(low+k, k, dir);
     }
