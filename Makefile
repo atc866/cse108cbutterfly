@@ -25,4 +25,4 @@ test_bitonic_sort.o: test_bitonic_sort.cpp bitonic_sort.h
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f *.o $(TARGET) bitonic_sort
