@@ -5,21 +5,17 @@
 //compares the values and replaces the values that are different
 
 //Server Methods--
-Server::Server(int* data, int input_size) {
+Server::Server(vector<int> data, int input_size) {
     storage = data;
     size = input_size;
 }
 
 int Server :: get_value(int index) {
-    string log = "Get: " + to_string(index) + ", " + to_string(storage[index]);
-    access_log.emplace_back(log);
     return storage[index];
 }
 
 int Server :: set_value(int index, int value) {
     storage[index] = value;
-    string log = "Set:" + to_string(index) + ", " + to_string(value);
-    access_log.emplace_back(log);
     return 0;
 }
 
