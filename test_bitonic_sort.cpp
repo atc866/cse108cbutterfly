@@ -3,11 +3,12 @@
 #include <random>
 
 
-int main() {
+int main(int argc, char** argv) {
     //take argument as input data size, only powers of 2
 
     //generate input data
-    vector<string> input_data = {"1", "2", "3", "4", "5", "6", "7", "8"};
+    vector<string> input_data;
+    int input_size
 
     Server server(input_data, 16);
     Client client(&server);

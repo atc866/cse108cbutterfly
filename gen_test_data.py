@@ -12,10 +12,22 @@ def gen_data(name, count):
         file.write(",")
     file.write("]")
     file.close()
+    
+def gen_bucket_data(name, count, size):
+    indexes = list(range(0, count))
+    file = open(name, "w")
+    file.write("[")
+    for i in range(count):
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=size))
+        random_index = random.choice(indexes)
+        indexes.remove(random_index)
+        random_string.replace(",", "")
+        file.write('("Sort_value": ')
+        file.write(str(random_index))
+        file.write(', "Payload": "')
+        file.write(random_string)
+        file.write('")')
+    file.write("]")
+    file.close()
         
-gen_data("strings17.json", 2**17)
-gen_data("strings18.json", 2**18)
-gen_data("strings19.json", 2**19)
-gen_data("strings20.json", 2**20)
-gen_data("strings21.json", 2**21)
-gen_data("strings22.json", 2**22)
+gen_bucket_data("bstrings17.json", 2**17, 5)
