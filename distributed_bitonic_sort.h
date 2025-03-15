@@ -13,6 +13,7 @@ class Server {
         int size;
         Server(int* input, int input_size);
         vector<string> access_log;
+        vector<Client*> clients;
         int get_value(int index);
         int set_value(int index, int value);
 };
@@ -21,6 +22,7 @@ class Client {
     public:
         //let the client access the server
         Server* server;
+        int* slice;
 
         static constexpr int encryption_key = 0xDeadbeef;
 
