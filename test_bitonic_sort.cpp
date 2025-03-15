@@ -3,24 +3,17 @@
 #include <random>
 
 
-int main(int argc, char** argv) {
+int main() {
     //take argument as input data size, only powers of 2
-    int INPUT_DATA_SIZE = stoi(argv[1]);
 
     //generate input data
-    vector<int> input_data;
-    random_device rd;
-    mt19937 rng(rd());
-    uniform_int_distribution<int> dist(1, 1000);
-    for (int i = 0; i < INPUT_DATA_SIZE; i++) {
-        input_data.emplace_back(dist(rng));
-    }
+    vector<string> input_data = {"1", "2", "3", "4", "5", "6", "7", "8"};
 
-    Server server(input_data, INPUT_DATA_SIZE);
+    Server server(input_data, 16);
     Client client(&server);
 
     try {
-        client.sort(INPUT_DATA_SIZE, 1);
+        client.sort(8, 1);
 
     }
     catch (const exception &ex) {

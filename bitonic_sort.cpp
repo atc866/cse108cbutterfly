@@ -5,7 +5,7 @@
 //compares the values and replaces the values that are different
 
 //Server Methods--
-Server::Server(vector<int> data, int input_size) {
+Server::Server(vector<string> data, int input_size) {
     storage = data;
     size = input_size;
 }

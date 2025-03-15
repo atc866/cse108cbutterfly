@@ -9,10 +9,9 @@ using namespace std;
 class Server {
     public:
         //store a pointer to the storage and keep track of the size of the dataset
-        vector<int> storage;
+        vector<string> storage;
         int size;
-        Server(vector<int> input, int input_size);
-        vector<string> access_log;
+        Server(vector<string> input, int input_size);
         int get_value(int index);
         int set_value(int index, int value);
 };
