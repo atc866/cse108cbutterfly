@@ -12,8 +12,8 @@ class Server {
         vector<string> storage;
         int size;
         Server(vector<string> input, int input_size);
-        int get_value(int index);
-        int set_value(int index, int value);
+        string get_value(int index);
+        int set_value(int index, string value);
 };
 
 class Client {
@@ -21,14 +21,14 @@ class Client {
         //let the client access the server
         Server* server;
 
-        static constexpr int encryption_key = 0xDeadbeef;
+        string encryption_key = "Encryption_KeyEncryption_Key";
 
         //client constructor to set connected server
         Client(Server* new_server);
 
         //Simulated encryption, xors the values with the encryption key
-        int encrypt(int value);
-        int decrypt(int value);
+        string encrypt(string value);
+        string decrypt(string value);
 
         //run the bitonic sort for an array of N values
         void sort(int N, int up);

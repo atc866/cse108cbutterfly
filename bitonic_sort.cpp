@@ -10,11 +10,11 @@ Server::Server(vector<string> data, int input_size) {
     size = input_size;
 }
 
-int Server :: get_value(int index) {
+string Server :: get_value(int index) {
     return storage[index];
 }
 
-int Server :: set_value(int index, int value) {
+int Server :: set_value(int index, string value) {
     storage[index] = value;
     return 0;
 }
@@ -26,8 +26,8 @@ Client::Client(Server* new_server) {
 
 //without encryption
 void Client :: comp_values(int i, int j, int dir) {
-    int a = decrypt(server->get_value(i));
-    int b = decrypt(server->get_value(j));
+    string a = decrypt(server->get_value(i));
+    string b = decrypt(server->get_value(j));
     if (dir==(a>b)) {
         server->set_value(j, encrypt(a));
         server->set_value(i, encrypt(b));
@@ -70,12 +70,24 @@ void Client :: sort(int N, int up) {
     bitonic_sort(0, N, up);
 }
 
-int Client :: encrypt(int data) {
-  return data ^ encryption_key;
+string Client :: encrypt(string data) {
+  string result = "";
+  int l = data.length();
+  for (int i = 0; i < l; i++) {
+    result += data[i] ^ encryption_key[i];
+  }
+  return result;
 }
 
-int Client :: decrypt(int data) {
-  return data ^ encryption_key;
+string Client :: decrypt(string data) {
+  string result = "";
+  int l = data.length();
+  for (int i = 0; i < l; i++) {
+    result += data[i] ^ encryption_key[i];
+  }
+  return result;
 }
+
+
 
 
