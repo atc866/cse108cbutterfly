@@ -1,5 +1,5 @@
 #include "bitonic_sort.h"
-#include "nlohmann/json.hpp"
+#include "json.hpp"
 #include <iostream>
 #include <fstream>
 #include <random>
@@ -30,27 +30,50 @@ int main(int argc, char** argv) {
 
     for (const auto& obj : jsonObjects) {
             // You might add additional error checking here.
-            int sortVal = obj.at("sorting").get<int>();
+            int sortVal = obj.at("sort_value").get<int>();
             string payload = obj.at("payload").get<string>();
             Element e;
-            e.sorting = sortVal;
             // Initially, we set the key to the same as sorting (or you could mix in randomness later).
             e.index = sortVal;
             e.payload = payload;
             input_data.push_back(e);
         }
-
-    int input_size = stoi(argv[2]);
+    cout << "got input" << endl;
     
 
-    Server server(input_data, input_size);
+    Server server(input_data);
     Client client(&server);
 
     try {
 	auto start_time = std::chrono::high_resolution_clock::now();
-	client.sort(input_size, 1);
+	client.sort(131072, 1);
     	auto end_time = std::chrono::high_resolution_clock::now();
     	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        cout << duration.count() / 1000 << endl;
+	start_time = std::chrono::high_resolution_clock::now();
+        client.sort(262144, 1);
+        end_time = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        cout << duration.count() / 1000 << endl;
+        start_time = std::chrono::high_resolution_clock::now();
+        client.sort(524288, 1);
+        end_time = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        cout << duration.count() / 1000 << endl;
+	start_time = std::chrono::high_resolution_clock::now();
+        client.sort(1048576, 1);
+        end_time = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        cout << duration.count() / 1000 << endl;
+	start_time = std::chrono::high_resolution_clock::now();
+        client.sort(2097152, 1);
+        end_time = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        cout << duration.count() / 1000 << endl;
+	start_time = std::chrono::high_resolution_clock::now();
+        client.sort(4194304, 1);
+        end_time = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         cout << duration.count() / 1000 << endl;
 
     }

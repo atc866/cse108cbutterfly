@@ -14,11 +14,10 @@ struct Element {
 class Server {
     public:
         //store a pointer to the storage and keep track of the size of the dataset
-        vector<Element*> storage;
-        int size;
-        Server(vector<Element*> input, int input_size);
-        Element* get_value(int index);
-        int set_value(int index, Element* value);
+        vector<Element> storage;
+        Server(vector<Element> input);
+        Element get_value(int index);
+        int set_value(int index, Element value);
 };
 
 class Client {
