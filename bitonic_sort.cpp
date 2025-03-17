@@ -26,15 +26,15 @@ Client::Client(Server* new_server) {
 
 //without encryption
 void Client :: comp_values(int i, int j, int dir) {
-    string a = decrypt(server->get_value(i));
-    string b = decrypt(server->get_value(j));
+    string a = server->get_value(i);
+    string b = server->get_value(j);
     if (dir==(a>b)) {
-        server->set_value(j, encrypt(a));
-        server->set_value(i, encrypt(b));
+        server->set_value(j, a);
+        server->set_value(i, b);
     }
     else {
-        server->set_value(i, encrypt(a));
-        server->set_value(j, encrypt(b));
+        server->set_value(i, a);
+        server->set_value(j, b);
     }
 }
  

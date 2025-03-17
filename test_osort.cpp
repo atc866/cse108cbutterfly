@@ -32,8 +32,8 @@ int main() {
 
         // Optionally, print the untrusted memory access log.
         std::cout << "\nAccess Log:" << std::endl;
-        for (const auto &log : untrusted.get_access_log())
-            std::cout << log << std::endl;
+        //for (const auto &log : untrusted.get_access_log())
+        //    std::cout << log << std::endl;
     } catch (const std::exception &ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
     }
