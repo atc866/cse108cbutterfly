@@ -1,5 +1,6 @@
 // main.cpp
 #include "oblivious_sort.h"
+#include "nlohmann/json.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -10,12 +11,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cctype>
-#include "nlohmann/json.hpp"
 
 using namespace std;
 using json = nlohmann::json;
 
-// Helper function: Trim whitespace
+// Helper function: Trim whitespace from both ends of a string.
 string trim(const string& s) {
     auto start = s.begin();
     while (start != s.end() && isspace(*start))
@@ -27,29 +27,19 @@ string trim(const string& s) {
     return string(start, end + 1);
 }
 
-// Helper function: Parse a file formatted like:
-// [yWAPLdVoB,7ac2ZS4,VVYh, ...]
-// strings are not quoted ???
-vector<string> parseStringsFile(const string& filename) {
+// Helper function: Parse a file formatted as a JSON array of objects.
+vector<json> parseJsonObjects(const string& filename) {
     ifstream ifs(filename);
     if (!ifs.is_open())
         throw runtime_error("Could not open " + filename);
-    stringstream buffer;
-    buffer << ifs.rdbuf();
-    string content = buffer.str();
-
-    // Remove surrounding brackets if present.
-    if (!content.empty() && content.front() == '[')
-        content.erase(content.begin());
-    if (!content.empty() && content.back() == ']')
-        content.pop_back();
-
-    vector<string> result;
-    stringstream ss(content);
-    string item;
-    while (getline(ss, item, ','))
-        result.push_back(trim(item));
-    return result;
+    json j;
+    ifs >> j;
+    if (!j.is_array())
+        throw runtime_error("Expected a JSON array in " + filename);
+    vector<json> objects;
+    for (const auto& obj : j)
+        objects.push_back(obj);
+    return objects;
 }
 
 // Helper: Compute next power of two.
@@ -60,7 +50,7 @@ size_t nextPowerOfTwo(size_t n) {
     return power;
 }
 
-// Helper: Merge two sorted vectors (lexicographically, by Element::value)
+// Helper: Merge two sorted vectors (lexicographically, using the 'sorting' field)
 // and split into lower and upper halves.
 pair<vector<Element>, vector<Element>> distributedMerge(
     const vector<Element>& a,
@@ -69,7 +59,7 @@ pair<vector<Element>, vector<Element>> distributedMerge(
     vector<Element> merged(a.size() + b.size());
     merge(a.begin(), a.end(), b.begin(), b.end(), merged.begin(),
         [](const Element& e1, const Element& e2) {
-            return e1.value < e2.value;
+            return e1.sorting < e2.sorting;
         });
     size_t total = merged.size();
     size_t half = total / 2;
@@ -78,80 +68,83 @@ pair<vector<Element>, vector<Element>> distributedMerge(
     return { lower, upper };
 }
 
-// Helper: Compute a 32-bit key from a string by taking up to its first 4 characters.
-int computeKey(const string& s) {
-    int key = 0;
-    int len = min((int)s.size(), 4);
-    for (int i = 0; i < len; i++) {
-        key = (key << 8) | (unsigned char)s[i];
-    }
-    return key;
-}
-
 int main() {
     try {
-        // 1. Read and parse "strings17.json" using our custom parser.
-        vector<string> rawValues = parseStringsFile("strings17.json");
-        cout << "Loaded " << rawValues.size() << " strings from strings17.json." << endl;
+        // 1. Read and parse the JSON file.
+        vector<json> jsonObjects = parseJsonObjects("data.json");
+        cout << "Loaded " << jsonObjects.size() << " JSON objects from data.json." << endl;
 
         // START TEST HERE
 
-        // 2. Partition the data among 4 enclaves.
-        const int numEnclaves = 4;  // Must be a power of two.
-        size_t totalRows = rawValues.size();
+        // 2. Convert JSON objects into a vector of Element.
+        // Use the "sorting" field for the sorting column and "payload" for the payload.
+        vector<Element> inputElements;
+        for (const auto& obj : jsonObjects) {
+            // You might add additional error checking here.
+            int sortVal = obj.at("sorting").get<int>();
+            string payload = obj.at("payload").get<string>();
+            Element e;
+            e.sorting = sortVal;
+            // Initially, we set the key to the same as sorting (or you could mix in randomness later).
+            e.key = sortVal;
+            e.is_dummy = false;
+            e.payload = payload;
+            inputElements.push_back(e);
+        }
+        cout << "Converted " << inputElements.size() << " elements from JSON objects." << endl;
+
+        // 3. Partition the data among 4 enclaves.
+        const int numEnclaves = 4; // Must be a power of two.
+        size_t totalRows = inputElements.size();
         size_t rowsPerEnclave = totalRows / numEnclaves;
         size_t remainder = totalRows % numEnclaves;
-        vector<vector<string>> partitions(numEnclaves);
+        vector<vector<Element>> partitions(numEnclaves);
         size_t index = 0;
         for (int i = 0; i < numEnclaves; i++) {
             size_t count = rowsPerEnclave + (i < remainder ? 1 : 0);
             partitions[i].reserve(count);
             for (size_t j = 0; j < count; j++) {
-                partitions[i].push_back(rawValues[index++]);
+                partitions[i].push_back(inputElements[index++]);
             }
         }
 
-        // 3. For each partition, convert to a vector of Elements.
-        // Use computeKey to get an integer key for each string.
-        vector<vector<Element>> enclaveData(numEnclaves);
-        UntrustedMemory dummyUntrusted;
-        vector<Enclave> enclaves;
+        // 4. For each partition, pad to next power of two.
+        vector<vector<Element>> enclaveData = partitions; // Copy partitions into enclaveData.
         for (int i = 0; i < numEnclaves; i++) {
-            enclaves.emplace_back(&dummyUntrusted);
-            for (const auto& s : partitions[i]) {
-                Element e;
-                e.value = s;                  // The actual string.
-                e.key = computeKey(s);        // Compute an integer key from the string.
-                e.is_dummy = false;
-                enclaveData[i].push_back(e);
-            }
-            // Pad each partition to the next power of two.
             size_t origSize = enclaveData[i].size();
             size_t paddedSize = nextPowerOfTwo(origSize);
             if (paddedSize > origSize) {
                 for (size_t j = origSize; j < paddedSize; j++) {
                     Element dummy;
-                    dummy.value = "";
+                    dummy.sorting = 0;
                     dummy.key = 0;
                     dummy.is_dummy = true;
+                    dummy.payload = "";
                     enclaveData[i].push_back(dummy);
                 }
             }
         }
 
-        // 4. Perform local bitonic sort in each enclave concurrently.
+        // 5. Create a UntrustedMemory instance and Enclave objects.
+        UntrustedMemory dummyUntrusted;
+        vector<Enclave> enclaves;
+        for (int i = 0; i < numEnclaves; i++) {
+            enclaves.emplace_back(&dummyUntrusted);
+        }
+
+        // 6. Perform local bitonic sort in each enclave concurrently.
         vector<thread> threads;
         for (int i = 0; i < numEnclaves; i++) {
             threads.push_back(thread([i, &enclaves, &enclaveData]() {
                 enclaves[i].bitonicSort(enclaveData[i], 0, enclaveData[i].size(), true);
-                cout << "Enclave " << i << " local sort complete. Partition size: "
-                    << enclaveData[i].size() << "\n";
+                cout << "Enclave " << i << " local sort complete. Partition size: " << enclaveData[i].size() << "\n";
                 }));
         }
-        for (auto& t : threads)
+        for (auto& t : threads) {
             t.join();
+        }
 
-        // 5. Perform distributed merge rounds.
+        // 7. Perform distributed merge rounds.
         int rounds = log2(numEnclaves);
         for (int r = 1; r <= rounds; r++) {
             int step = 1 << (r - 1);
@@ -168,7 +161,7 @@ int main() {
             }
         }
 
-        // 6. Concatenate global sorted results (remove dummy elements).
+        // 8. Concatenate global sorted results (remove dummy elements).
         vector<Element> globalSorted;
         for (int i = 0; i < numEnclaves; i++) {
             for (const auto& e : enclaveData[i]) {
@@ -177,31 +170,30 @@ int main() {
             }
         }
 
-        // do this in tee or client, should be low cost bc it's already mostly sorted
-        sort(globalSorted.begin(), globalSorted.end(), [](const Element& a, const Element& b) {
-            return a.value < b.value;
-            });
-
         // END TEST HERE
 
-        bool isSorted = is_sorted(globalSorted.begin(), globalSorted.end(),
-            [](const Element& a, const Element& b) {
-                return a.value < b.value;
+        // 9. Do this in the tee or client, should be low cost since it's already partially sorted
+        sort(globalSorted.begin(), globalSorted.end(), [](const Element& a, const Element& b) {
+            return a.sorting < b.sorting;
+            });
+
+        bool isSorted = is_sorted(globalSorted.begin(), globalSorted.end(), [](const Element& a, const Element& b) {
+            return a.sorting < b.sorting;
             });
         cout << "Final sorted order verified? " << (isSorted ? "Yes" : "No") << "\n";
         cout << "Total global sorted rows: " << globalSorted.size() << "\n";
 
-        // 8. Write the final sorted strings to file.
-        ofstream ofs("sorted_output_distributed_bitonic_strings.json");
+        // 10. Write final sorted results to file.
+        ofstream ofs("sorted_output_distributed_bitonic.json");
         if (!ofs.is_open()) {
-            cerr << "Error: Could not open sorted_output_distributed_bitonic_strings.json for writing\n";
+            cerr << "Error: Could not open sorted_output_distributed_bitonic.json for writing\n";
             return 1;
         }
         for (const auto& e : globalSorted) {
-            ofs << e.value << "\n";
+            ofs << "{\"sorting\": " << e.sorting << ", \"payload\": \"" << e.payload << "\"}\n";
         }
         ofs.close();
-        cout << "Wrote sorted_output_distributed_bitonic_strings.json\n";
+        cout << "Wrote sorted_output_distributed_bitonic.json\n";
     }
     catch (const exception& ex) {
         cerr << "Error: " << ex.what() << "\n";
