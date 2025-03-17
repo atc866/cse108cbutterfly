@@ -6,14 +6,19 @@ using namespace std;
 #include <vector>
 #include <string>
 
+struct Element {
+  int index;
+  string payload;
+};
+
 class Server {
     public:
         //store a pointer to the storage and keep track of the size of the dataset
-        vector<string> storage;
+        vector<Element*> storage;
         int size;
-        Server(vector<string> input, int input_size);
-        string get_value(int index);
-        int set_value(int index, string value);
+        Server(vector<Element*> input, int input_size);
+        Element* get_value(int index);
+        int set_value(int index, Element* value);
 };
 
 class Client {

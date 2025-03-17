@@ -5,16 +5,16 @@
 //compares the values and replaces the values that are different
 
 //Server Methods--
-Server::Server(vector<string> data, int input_size) {
+Server::Server(vector<Element*> data, int input_size) {
     storage = data;
     size = input_size;
 }
 
-string Server :: get_value(int index) {
+Element* Server :: get_value(int index) {
     return storage[index];
 }
 
-int Server :: set_value(int index, string value) {
+int Server :: set_value(int index, Element* value) {
     storage[index] = value;
     return 0;
 }
@@ -26,9 +26,9 @@ Client::Client(Server* new_server) {
 
 //without encryption
 void Client :: comp_values(int i, int j, int dir) {
-    string a = server->get_value(i);
-    string b = server->get_value(j);
-    if (dir==(a>b)) {
+    Element* a = server->get_value(i);
+    Element* b = server->get_value(j);
+    if (dir==((a->index)>(b->index))) {
         server->set_value(j, a);
         server->set_value(i, b);
     }
