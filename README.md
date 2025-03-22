@@ -45,3 +45,5 @@ use generate_json.py to make json that has two column array (sorting column, pay
 use the executetable for the test and add the correctly formatted file as an arguement in command line
 
 FOR CRYPTOGRAPHIC OPERATIONS/CRYPTOPP->NEED TO HAVE CRYPTOPP INSTALLED AND WILL NEED TO CHANGE MAKEFILE TO SUPPORT THIS
+JSON LIBRARY SHOULD ALREADY BE IN GITHUB
+->CRYPTOPP_INCLUDES = -I/opt/homebrew/include
