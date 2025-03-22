@@ -137,13 +137,6 @@ std::pair<std::vector<Element>, std::vector<Element>> Enclave::merge_split_biton
     int needed_dummies1 = Z - count1;
     int assigned_dummies0 = 0, assigned_dummies1 = 0;
 
-    // For each element in 'combined', assign a composite key that will be used for bitonic sort.
-    // We define the composite key as:
-    //   For a real element: ( ( (elem.key >> bit_index) & 1 ) << 1 ) | 0.
-    //       That is, 0 if the bit is 0 (target bucket 0) and 2 if the bit is 1 (target bucket 1).
-    //   For a dummy element:
-    //       If we still need dummies in bucket 0, assign composite key 1.
-    //       Otherwise, assign composite key 3.
     for (auto& elem : combined) {
         if (elem.is_dummy) {
             if (assigned_dummies0 < needed_dummies0) {
@@ -185,9 +178,6 @@ void Enclave::performButterflyNetwork(int B, int L, int Z) {
     }
 }
 
-// NEW: Oblivious permutation for a bucket using constant local storage.
-// For each element in the bucket, assign a random label (using the key field)
-// and then obliviously sort the bucket by these labels using bitonic sort.
 void Enclave::obliviousPermuteBucket(std::vector<Element>& bucket) {
     // Assign each element a uniformly random label (Θ(log n) bits).
     for (auto &elem : bucket) {

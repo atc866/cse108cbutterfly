@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     Enclave enclave(&untrusted);
     
     // Choose a bucket size (e.g., 32).
-    int bucket_size = 256;
+    int bucket_size = 512;
     std::cout << "Starting oblivious bucket sort with bucket size " << bucket_size << "...\n";
     auto start = std::chrono::high_resolution_clock::now();
     // Sort the rows.

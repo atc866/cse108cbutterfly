@@ -18,12 +18,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // Parse JSON input. Expected format:
-    // [
-    //   {"sorting": 240906659, "payload": "LKc3l"},
-    //   {"sorting": 4252803184, "payload": "W1T1r"},
-    //    ...
-    // ]
     json j;
     try {
         ifs >> j;
@@ -47,7 +41,7 @@ int main(int argc, char* argv[]) {
     Enclave enclave(&untrusted);
     
     // Choose bucket size (Z). For example, 512.
-    int bucket_size = 512;
+    int bucket_size = 256;
     std::cout << "Starting oblivious bucket sort with bucket size " << bucket_size << "...\n";
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<Element> sortedElements = enclave.oblivious_sort(inputElements, bucket_size);
