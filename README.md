@@ -36,3 +36,12 @@ test_distributed_bitonic_sort_objects/string.cpp->test distributed bitonic sort 
 test_osort.cpp->test oblivious_sort.cpp
 
 Makefile-> create executeables for bucket_sort_two/xortwo/merge/xormerge/constant/xorconstant/string/simple
+
+
+RECREATING TEST
+run the makefile, (have to make different for distributed test) to create executables
+use gen_test_data.py to make json that is string array
+use generate_json.py to make json that has two column array (sorting column, payload column)
+use the executetable for the test and add the correctly formatted file as an arguement in command line
+
+FOR CRYPTOGRAPHIC OPERATIONS/CRYPTOPP->NEED TO HAVE CRYPTOPP INSTALLED AND WILL NEED TO CHANGE MAKEFILE TO SUPPORT THIS
